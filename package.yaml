@@ -1,0 +1,75 @@
+name:                metamorTHysis-cli
+version:             0.1.0.0
+github:              "Anteproperispomenon/metamorTHysis-cli"
+license:             BSD-3-Clause
+author:              "David Wilson"
+maintainer:          "example@example.com"
+copyright:           "2024 David Wilson"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/metamorTHysis-cli#readme>
+
+default-extensions:
+- FlexibleInstances
+- ImportQualifiedPost
+- LambdaCase
+- MultiWayIf
+- OverloadedStrings
+- ScopedTypeVariables
+- TupleSections
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- containers
+- directory
+- filepath
+- optparse-applicative
+- template-haskell
+- text
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-export-lists
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+# executables:
+#   metamorTHysis-cli-exe:
+#     main:                Main.hs
+#     source-dirs:         app
+#     ghc-options:
+#     - -threaded
+#     - -rtsopts
+#     - -with-rtsopts=-N
+#     dependencies:
+#     - metamorTHysis-cli
+
+tests:
+  metamorTHysis-cli-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - metamorTHysis-cli

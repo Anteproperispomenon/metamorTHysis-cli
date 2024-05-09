@@ -3,6 +3,7 @@ module Metamorth.CLI.Types
 
   ) where
 
+-- | Basic type for information parsed by the CLI.
 data DataFromCLI inO outO = DataFromCLI
   { cliInputFile  :: FilePath
   , cliOutputFile :: Maybe FilePath
@@ -10,4 +11,7 @@ data DataFromCLI inO outO = DataFromCLI
   , cliOutputOrth :: outO
   , cliDefaultExt :: String
   } deriving (Show, Eq)
+
+
+
 

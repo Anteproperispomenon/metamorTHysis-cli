@@ -35,6 +35,8 @@ dependencies:
 - directory
 - filepath
 - optparse-applicative
+- prettyprinter
+- prettyprinter-ansi-terminal
 - template-haskell
 - text
 

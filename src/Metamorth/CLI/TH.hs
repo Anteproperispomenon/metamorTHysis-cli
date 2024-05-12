@@ -37,26 +37,30 @@ createMain = do
   mainFuncName <- maybeLookupValue "convertOrthographyBS" mainFuncErr
 
   -- hmm...
-  parserExp <- [| dataReader $(pure $ ConE inMapName) $(pure $ ConE outMapName) |]
+  parserExp <- [| dataReader $(pure $ VarE inMapName) $(pure $ VarE outMapName) |]
 
   parserStuff <- [| info ( $(pure parserExp) <**> helper) mempty |]
   
   -- mainRunner <- newName "mainRunner"
 
   runParserDefn <- 
-    [d| mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt) = do
+    [d| mainRunner :: DataFromCLI -> IO ()
+        mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt) = do
           outFP <- case outFP' of
             (Just x) -> do
               return x
             Nothing -> do
               return $ addSubExtension inFP fpExt
-          inData <- TE.decodeUtf8 <$> BS.readFile
-          let outData = $(pure $ ConE mainFuncName) inOrth outOrth inData
-          BL.writeFile outFP outData
+          inData <- TE.decodeUtf8 <$> BS.readFile inFP
+          let outDataE = $(pure $ VarE mainFuncName) inOrth outOrth inData
+          case outDataE of
+            (Left err) -> putStrLn $ "Error: " ++ err
+            (Right ot) -> BL.writeFile outFP ot
     |]
 
   -- mainType <- [t| IO () |]
-  mainExpr <- [d| main = (execParser $(pure parserStuff)) >>= mainRunner |]
+  mainExpr <- [d| main :: IO ()
+                  main = (execParser $(pure parserStuff)) >>= mainRunner |]
 
   return (runParserDefn ++ mainExpr)
 

@@ -10,6 +10,7 @@ data DataFromCLI inO outO = DataFromCLI
   , cliInputOrth  :: inO
   , cliOutputOrth :: outO
   , cliDefaultExt :: String
+  , cliOverwrite  :: Bool
   } deriving (Show, Eq)
 
 

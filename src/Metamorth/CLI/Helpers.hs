@@ -47,13 +47,19 @@ dataReader inMap outMap = do
      <> metavar "ORTHOGRAPHY"
      <> helpDoc (Just (makeOrthOptions "Input" inFlip))
      )
+  ovr <- switch
+     ( short 'w'
+     <> long "ovr"
+     <> long "overwrite"
+     <> helpDoc (Just "Overwrite the output file if it already exists.")
+     )
   (outOrth, extn) <- option (outputOrthReader outMap)
      ( short 't'
      <> long "to"
      <> metavar "ORTHOGRAPHY"
      <> helpDoc (Just (makeOrthOptions "Output" outFlip))
      )
-  return $ DataFromCLI inFile outFile inOrth outOrth extn
+  return $ DataFromCLI inFile outFile inOrth outOrth extn ovr
   where
    inFlip  = invertOrthMap inMap
    outFlip = invertOrthMap (fmap fst outMap)

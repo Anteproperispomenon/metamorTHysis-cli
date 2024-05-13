@@ -2,6 +2,8 @@
 
 module Metamorth.CLI.TH (createMain) where
 
+import Control.Monad
+
 import Data.ByteString      qualified as BS
 import Data.ByteString.Lazy qualified as BL
 
@@ -23,6 +25,7 @@ import Options.Applicative
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
+import System.Directory
 import System.FilePath
 
 
@@ -39,28 +42,42 @@ createMain = do
   -- hmm...
   parserExp <- [| dataReader $(pure $ VarE inMapName) $(pure $ VarE outMapName) |]
 
-  parserStuff <- [| info ( $(pure parserExp) <**> helper) mempty |]
+  parserStuff <- [| info ( $(pure parserExp) <**> helper) (fullDesc <> (progDesc "A simple orthography converter")) |]
   
   -- mainRunner <- newName "mainRunner"
 
   runParserDefn <- 
-    [d| mainRunner :: DataFromCLI -> IO ()
-        mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt) = do
+    [d| mainRunner :: (DataFromCLI $(pure $ ConT inOrthType) $(pure $ ConT outOrthType)) -> IO ()
+        mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt ovrw) = do
+          putStrLn "Running orthography parser..."
           outFP <- case outFP' of
             (Just x) -> do
               return x
             Nothing -> do
               return $ addSubExtension inFP fpExt
-          inData <- TE.decodeUtf8 <$> BS.readFile inFP
-          let outDataE = $(pure $ VarE mainFuncName) inOrth outOrth inData
-          case outDataE of
-            (Left err) -> putStrLn $ "Error: " ++ err
-            (Right ot) -> BL.writeFile outFP ot
+          ibl <- doesFileExist inFP
+          if (not ibl)
+            then putStrLn $ "Error: Input file \"" <> inFP <> "\" does not exist."
+            else do
+              obl <- doesFileExist outFP
+              if (obl && (not ovrw))
+                then putStrLn $ "Error: Output file \"" <> outFP <> "\" already exists. To overwrite it, add the \"--overwrite\" flag to your command."
+                else do
+                  inData <- TE.decodeUtf8 <$> BS.readFile inFP
+                  let outDataE = $(pure $ VarE mainFuncName) inOrth outOrth inData
+                  case outDataE of
+                    (Left err) -> putStrLn $ "Error: " ++ err
+                    (Right ot) -> do
+                      when obl $ putStrLn $ "Overwriting \"" <> outFP <> "\"..."
+                      BL.writeFile outFP ot
     |]
+
 
   -- mainType <- [t| IO () |]
   mainExpr <- [d| main :: IO ()
-                  main = (execParser $(pure parserStuff)) >>= mainRunner |]
+                  main = do
+                    (execParser $(pure parserStuff)) >>= mainRunner 
+              |]
 
   return (runParserDefn ++ mainExpr)
 

@@ -23,11 +23,23 @@ import Metamorth.CLI.Types
 import Options.Applicative
 
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
+    ( mkName
+    , Exp(..)
+    , Q
+    , Type(..)
+    , Dec
+    , Name
+    , lookupTypeName
+    , lookupValueName
+    , reportError 
+    )
+-- import Language.Haskell.TH.Syntax
 
 import System.Directory
 import System.FilePath
 
+import Prettyprinter
+import Prettyprinter.Render.Terminal
 
 createMain :: Q [Dec]
 createMain = do
@@ -57,18 +69,18 @@ createMain = do
               return $ addSubExtension inFP fpExt
           ibl <- doesFileExist inFP
           if (not ibl)
-            then putStrLn $ "Error: Input file \"" <> inFP <> "\" does not exist."
+            then putDoc $ (annotate ((color Red) <> bold) "Error") <> pretty (": Input file \"" <> inFP <> "\" does not exist.")
             else do
               obl <- doesFileExist outFP
               if (obl && (not ovrw))
-                then putStrLn $ "Error: Output file \"" <> outFP <> "\" already exists. To overwrite it, add the \"--overwrite\" flag to your command."
+                then putDoc $ (annotate ((color Red) <> bold) "Error") <> pretty (": Output file \"" <> outFP <> "\" already exists. To overwrite it, add the \"--overwrite\" flag to your command.")
                 else do
                   inData <- TE.decodeUtf8 <$> BS.readFile inFP
                   let outDataE = $(pure $ VarE mainFuncName) inOrth outOrth inData
                   case outDataE of
-                    (Left err) -> putStrLn $ "Error: " ++ err
+                    (Left err) -> putDoc $ (annotate ((color Red) <> bold) "Parsing Error") <> pretty (" : " <> err)
                     (Right ot) -> do
-                      when obl $ putStrLn $ "Overwriting \"" <> outFP <> "\"..."
+                      when obl $ putDoc $ annotate (color Yellow) $ pretty ("Overwriting \"" <> outFP <> "\"...")
                       BL.writeFile outFP ot
     |]
 

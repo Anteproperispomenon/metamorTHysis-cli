@@ -95,10 +95,19 @@ makeOrthOptions str mp
     annSeln col = annotate (color col) 
     makeOption :: (Ord orth, Show orth) => orth -> S.Set String -> Doc AnsiStyle
     makeOption ort st
-      = (annotate ((color Green) <> bold) (viaShow ort)) <+> (annotate (color Yellow) ":") <+> 
+      = (annotate ((color Green) <> bold) (viaShowX ort)) <+> (annotate (color Yellow) ":") <+> 
           (hsep $ punctuate "," $ map (annSeln Red . pretty) $ S.toList st)
 
+-- Removing "In/Out" before the orthography name.
 
+viaShowX :: (Show a) => a -> Doc ann
+viaShowX = pretty . T.pack . showX
+
+showX :: (Show a) => a -> String
+showX x = case (show x) of
+   ('I':'n':rst)     -> rst
+   ('O':'u':'t':rst) -> rst
+   rst               -> rst
 
 
 

@@ -14,6 +14,8 @@ import Data.Char (toLower)
 
 import Data.Map.Strict qualified as M
 
+import Data.Maybe
+
 import Data.Text qualified as T
 
 import Metamorth.CLI.Types
@@ -23,8 +25,8 @@ import Options.Applicative hiding (Doc)
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
-dataReader :: (Show inOrth, Show outOrth, Ord inOrth, Ord outOrth) => M.Map String inOrth -> M.Map String (outOrth, String) -> Parser (DataFromCLI inOrth outOrth)
-dataReader inMap outMap = do
+dataReader :: (Show inOrth, Show outOrth, Ord inOrth, Ord outOrth) => M.Map String inOrth -> M.Map String (outOrth, String) -> (Maybe String, M.Map String String) -> Parser (DataFromCLI inOrth outOrth)
+dataReader inMap outMap (_, descMap) = do
   inFile <- option str
      ( short 'i'
      <> long "input"
@@ -45,7 +47,7 @@ dataReader inMap outMap = do
      ( short 'f'
      <> long "from"
      <> metavar "ORTHOGRAPHY"
-     <> helpDoc (Just (makeOrthOptions "Input" inFlip))
+     <> helpDoc (Just (makeOrthOptions True "Input" inFlip inDescs))
      )
   ovr <- switch
      ( short 'w'
@@ -57,12 +59,14 @@ dataReader inMap outMap = do
      ( short 't'
      <> long "to"
      <> metavar "ORTHOGRAPHY"
-     <> helpDoc (Just (makeOrthOptions "Output" outFlip))
+     <> helpDoc (Just (makeOrthOptions True "Output" outFlip outDescs))
      )
   return $ DataFromCLI inFile outFile inOrth outOrth extn ovr
   where
-   inFlip  = invertOrthMap inMap
-   outFlip = invertOrthMap (fmap fst outMap)
+   inFlip   = invertOrthMap inMap
+   outFlip  = invertOrthMap (fmap fst outMap)
+   inDescs  = getInOrthDescs descMap inMap
+   outDescs = getInOrthDescs descMap (fmap fst outMap)
 
 inputOrthReader :: M.Map String inOrth -> ReadM inOrth
 inputOrthReader mp = maybeReader $ \thisStr -> M.lookup (map toLower thisStr) mp
@@ -82,21 +86,29 @@ insertWithElse :: (Ord k) => (w -> v -> v) -> (w -> v) -> k -> w -> M.Map k v ->
 insertWithElse op f k val
   = M.alter (\case {Nothing -> Just $ f val ; (Just y) -> Just $ op val y}) k
 
+getInOrthDescs :: (Ord inOrth) => M.Map String String -> M.Map String inOrth -> M.Map inOrth String
+getInOrthDescs descMap orthMap = M.mapKeys fromJust $ M.delete Nothing $ M.mapKeys (\k -> M.lookup k orthMap) descMap
+
 
 ------------------------------------------------
 -- Pretty-Printing some Documentation
 
-makeOrthOptions :: forall orth. (Ord orth, Show orth) => String -> M.Map orth (S.Set String) -> Doc AnsiStyle
-makeOrthOptions str mp
-  = (pretty str) <+> "Orthography Options:" <> line <> (indent 2 $ vsep $ map (uncurry makeOption) $ M.assocs mp)
+makeOrthOptions :: forall orth. (Ord orth, Show orth) => Bool -> String -> M.Map orth (S.Set String) -> M.Map orth String -> Doc AnsiStyle
+makeOrthOptions showDescs strg mp descMap
+  = (pretty strg) <+> "Orthography Options:" <> line <> (indent 2 $ vsep $ map (uncurry $ makeOption descMap) $ M.assocs mp)
       
   where
     annSeln :: Color -> Doc AnsiStyle -> Doc AnsiStyle
     annSeln col = annotate (color col) 
-    makeOption :: (Ord orth, Show orth) => orth -> S.Set String -> Doc AnsiStyle
-    makeOption ort st
-      = (annotate ((color Green) <> bold) (viaShowX ort)) <+> (annotate (color Yellow) ":") <+> 
-          (hsep $ punctuate "," $ map (annSeln Red . pretty) $ S.toList st)
+    makeOption :: (Ord orth, Show orth) => M.Map orth String -> orth -> S.Set String -> Doc AnsiStyle
+    makeOption ortMap ort st = vsep $ catMaybes
+      [ Just $ (annotate ((color Green) <> bold) (viaShowX ort)) <+> (annotate (color Yellow) ":") <+> 
+         (hsep $ punctuate "," $ map (annSeln Red . pretty) $ S.toList st)
+      , if (showDescs)
+         then fmap (\descStr -> indent 2 $ (annotate (color Green) "\x2514\x2500") <+> (annotate (color Cyan) $ pretty descStr)) desc
+         else Nothing
+      ]
+      where desc = M.lookup ort ortMap
 
 -- Removing "In/Out" before the orthography name.
 

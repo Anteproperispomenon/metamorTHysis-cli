@@ -9,6 +9,8 @@ import Data.ByteString.Lazy qualified as BL
 
 import Data.Char (toLower)
 
+import Data.Maybe
+
 import Data.Map.Strict qualified as M
 
 import Data.Text          qualified as T
@@ -32,8 +34,11 @@ import Language.Haskell.TH
     , lookupTypeName
     , lookupValueName
     , reportError 
+    , stringE
     )
--- import Language.Haskell.TH.Syntax
+import Language.Haskell.TH.Syntax qualified as Lift ( Lift(..) ) 
+
+
 
 import System.Directory
 import System.FilePath
@@ -51,10 +56,23 @@ createMain = do
 
   mainFuncName <- maybeLookupValue "convertOrthographyBS" mainFuncErr
 
-  -- hmm...
-  parserExp <- [| dataReader $(pure $ VarE inMapName) $(pure $ VarE outMapName) |]
+  mLanguageDetails <- lookupValueName "languageDetails"
 
-  parserStuff <- [| info ( $(pure parserExp) <**> helper) (fullDesc <> (progDesc "A simple orthography converter")) |]
+  -- Convert the language details into an expression.
+  eldExpr <- case mLanguageDetails of
+    Nothing    -> [| (Nothing, M.empty) |]
+    (Just nom) -> [| $(pure $ VarE nom) |]
+  
+  progDescExp <-
+    [| case ($(pure eldExpr)) of
+         (Nothing  , _) -> "A simple orthography converter"
+         (Just lang, _) -> "A simple orthography converter for " ++ lang
+    |]
+
+  -- hmm...
+  parserExp <- [| dataReader $(pure $ VarE inMapName) $(pure $ VarE outMapName) $(pure eldExpr) |]
+
+  parserStuff <- [| info ( $(pure parserExp) <**> helper) (fullDesc <> (progDesc $(pure progDescExp))) |]
   
   -- mainRunner <- newName "mainRunner"
 

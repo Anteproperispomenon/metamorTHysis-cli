@@ -25,8 +25,10 @@ import Options.Applicative hiding (Doc)
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
-dataReader :: (Show inOrth, Show outOrth, Ord inOrth, Ord outOrth) => M.Map String inOrth -> M.Map String (outOrth, String) -> (Maybe String, M.Map String String) -> Parser (DataFromCLI inOrth outOrth)
-dataReader inMap outMap (_, descMap) = do
+import Metamorth.CLI.Colour -- (ColourContext, ctxColour)
+
+dataReader :: (Show inOrth, Show outOrth, Ord inOrth, Ord outOrth) => M.Map String inOrth -> M.Map String (outOrth, String) -> (Maybe String, M.Map String String) -> ColourContext -> Parser (DataFromCLI inOrth outOrth)
+dataReader inMap outMap (_, descMap) cc = do
   inFile <- option str
      ( short 'i'
      <> long "input"
@@ -47,7 +49,7 @@ dataReader inMap outMap (_, descMap) = do
      ( short 'f'
      <> long "from"
      <> metavar "ORTHOGRAPHY"
-     <> helpDoc (Just (makeOrthOptions True "Input" inFlip inDescs))
+     <> helpDoc (Just (makeOrthOptions cc True "Input" inFlip inDescs))
      )
   ovr <- switch
      ( short 'w'
@@ -59,7 +61,7 @@ dataReader inMap outMap (_, descMap) = do
      ( short 't'
      <> long "to"
      <> metavar "ORTHOGRAPHY"
-     <> helpDoc (Just (makeOrthOptions True "Output" outFlip outDescs))
+     <> helpDoc (Just (makeOrthOptions cc True "Output" outFlip outDescs))
      )
   return $ DataFromCLI inFile outFile inOrth outOrth extn ovr
   where
@@ -93,8 +95,8 @@ getInOrthDescs descMap orthMap = M.mapKeys fromJust $ M.delete Nothing $ M.mapKe
 ------------------------------------------------
 -- Pretty-Printing some Documentation
 
-makeOrthOptions :: forall orth. (Ord orth, Show orth) => Bool -> String -> M.Map orth (S.Set String) -> M.Map orth String -> Doc AnsiStyle
-makeOrthOptions showDescs strg mp descMap
+makeOrthOptions :: forall orth. (Ord orth, Show orth) => ColourContext -> Bool -> String -> M.Map orth (S.Set String) -> M.Map orth String -> Doc AnsiStyle
+makeOrthOptions cc showDescs strg mp descMap
   = (pretty strg) <+> "Orthography Options:" <> line <> (indent 2 $ vsep $ map (uncurry $ makeOption descMap) $ M.assocs mp)
       
   where
@@ -102,10 +104,10 @@ makeOrthOptions showDescs strg mp descMap
     annSeln col = annotate (color col) 
     makeOption :: (Ord orth, Show orth) => M.Map orth String -> orth -> S.Set String -> Doc AnsiStyle
     makeOption ortMap ort st = vsep $ catMaybes
-      [ Just $ (annotate ((color Green) <> bold) (viaShowX ort)) <+> (annotate (color Yellow) ":") <+> 
+      [ Just $ (annotate ((ctxColour cc GreenH) <> bold) (viaShowX ort)) <+> (annotate (ctxColour cc YellowH) ":") <+> 
          (hsep $ punctuate "," $ map (annSeln Red . pretty) $ S.toList st)
       , if (showDescs)
-         then fmap (\descStr -> indent 2 $ (annotate (color Green) "\x2514\x2500") <+> (annotate (color Cyan) $ pretty descStr)) desc
+         then fmap (\descStr -> indent 2 $ (annotate (ctxColour cc GreenH) "\x2514\x2500") <+> (annotate (ctxColour cc CyanH) $ pretty descStr)) desc
          else Nothing
       ]
       where desc = M.lookup ort ortMap

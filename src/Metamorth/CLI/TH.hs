@@ -74,16 +74,16 @@ createMain = do
   -- hmm...
   parserExp <- [| dataReader $(pure $ VarE inMapName) $(pure $ VarE outMapName) $(pure eldExpr) |]
 
-  parserStuff <- [| info ( $(pure parserExp) <**> helper) (fullDesc <> (progDesc $(pure progDescExp))) |]
+  parserStuff <- [| \cc -> info ( ($(pure parserExp) cc) <**> helper) (fullDesc <> (progDesc $(pure progDescExp))) |]
   
   -- mainRunner <- newName "mainRunner"
 
   runParserDefn <- 
-    [d| mainRunner :: (DataFromCLI $(pure $ ConT inOrthType) $(pure $ ConT outOrthType)) -> IO ()
-        mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt ovrw) = do
+    [d| mainRunner :: ColourContext -> (DataFromCLI $(pure $ ConT inOrthType) $(pure $ ConT outOrthType)) -> IO ()
+        mainRunner cc (DataFromCLI inFP outFP' inOrth outOrth fpExt ovrw) = do
           -- clrMaps <- queryColours
           -- bkdClr  <- getBkdColour
-          clrCtx <- getColourContext
+          -- clrCtx <- getColourContext
           putStrLn "Running orthography parser..."
           outFP <- case outFP' of
             (Just x) -> do
@@ -92,18 +92,18 @@ createMain = do
               return $ addSubExtension inFP fpExt
           ibl <- doesFileExist inFP
           if (not ibl)
-            then putDoc $ (annotate ((color Red) <> bold) "Error") <> pretty (": Input file \"" <> inFP <> "\" does not exist.")
+            then putDoc $ (annotate ((ctxColour cc RedH) <> bold) "Error") <> pretty (": Input file \"" <> inFP <> "\" does not exist.")
             else do
               obl <- doesFileExist outFP
               if (obl && (not ovrw))
-                then putDoc $ (annotate ((color Red) <> bold) "Error") <> pretty (": Output file \"" <> outFP <> "\" already exists. To overwrite it, add the \"--overwrite\" flag to your command.")
+                then putDoc $ (annotate ((ctxColour cc RedH) <> bold) "Error") <> pretty (": Output file \"" <> outFP <> "\" already exists. To overwrite it, add the \"--overwrite\" flag to your command.")
                 else do
                   inData <- TE.decodeUtf8 <$> BS.readFile inFP
                   let outDataE = $(pure $ VarE mainFuncName) inOrth outOrth inData
                   case outDataE of
-                    (Left err) -> putDoc $ (annotate ((color Red) <> bold) "Parsing Error") <> pretty (" : " <> err)
+                    (Left err) -> putDoc $ (annotate ((ctxColour cc RedH) <> bold) "Parsing Error") <> pretty (" : " <> err)
                     (Right ot) -> do
-                      when obl $ putDoc $ annotate (color Yellow) $ pretty ("Overwriting \"" <> outFP <> "\"...")
+                      when obl $ putDoc $ annotate (ctxColour cc YellowH) $ pretty ("Overwriting \"" <> outFP <> "\"...")
                       BL.writeFile outFP ot
     |]
 
@@ -111,7 +111,8 @@ createMain = do
   -- mainType <- [t| IO () |]
   mainExpr <- [d| main :: IO ()
                   main = withCP65001 $ do
-                    (execParser $(pure parserStuff)) >>= mainRunner 
+                    cc <- getColourContext
+                    (execParser ($(pure parserStuff) cc)) >>= (mainRunner cc)
               |]
 
   return (runParserDefn ++ mainExpr)

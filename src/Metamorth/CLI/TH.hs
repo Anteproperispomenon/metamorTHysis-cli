@@ -38,7 +38,7 @@ import Language.Haskell.TH
     )
 import Language.Haskell.TH.Syntax qualified as Lift ( Lift(..) ) 
 
-
+import System.IO.CodePage 
 
 import System.Directory
 import System.FilePath
@@ -105,7 +105,7 @@ createMain = do
 
   -- mainType <- [t| IO () |]
   mainExpr <- [d| main :: IO ()
-                  main = do
+                  main = withCP65001 $ do
                     (execParser $(pure parserStuff)) >>= mainRunner 
               |]
 

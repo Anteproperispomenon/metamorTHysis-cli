@@ -46,6 +46,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , code-page
     , containers
     , directory
     , filepath
@@ -77,6 +78,7 @@ test-suite metamorTHysis-cli-test
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , code-page
     , containers
     , directory
     , filepath

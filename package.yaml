@@ -30,8 +30,10 @@ default-extensions:
 
 dependencies:
 - base >= 4.7 && < 5
+- ansi-terminal
 - bytestring
 - code-page
+- colour
 - containers
 - directory
 - filepath

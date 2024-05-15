@@ -38,6 +38,8 @@ import Language.Haskell.TH
     )
 import Language.Haskell.TH.Syntax qualified as Lift ( Lift(..) ) 
 
+import Metamorth.CLI.Colour
+
 import System.IO.CodePage 
 
 import System.Directory
@@ -79,6 +81,8 @@ createMain = do
   runParserDefn <- 
     [d| mainRunner :: (DataFromCLI $(pure $ ConT inOrthType) $(pure $ ConT outOrthType)) -> IO ()
         mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt ovrw) = do
+          clrMaps <- queryColours
+          bkdClr  <- getBkdColour
           putStrLn "Running orthography parser..."
           outFP <- case outFP' of
             (Just x) -> do

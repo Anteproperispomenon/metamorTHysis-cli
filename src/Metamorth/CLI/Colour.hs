@@ -9,8 +9,11 @@ module Metamorth.CLI.Colour
   , queryColours
   , getBkdColour
   , colour
-  , ctxColour
   , RGB16(..)
+  -- * Main type and helpers
+  , ColourContext
+  , getColourContext
+  , ctxColour
   -- * Patterns
 
   -- ** Vivid Colours
@@ -61,12 +64,17 @@ import System.IO
 
 import System.Console.ANSI
 
+data ColourContext = ColourContext
+  { ccColourMaps       :: Maybe (M.Map (PP.Color, Bool) (RGB Word16), M.Map RGB16 (PP.Color, Bool))
+  , ccBackgroundColour :: Maybe (RGB Word16)
+  } deriving (Show, Eq)
+
 getBkdColour :: IO (Maybe (RGB Word16))
 getBkdColour = getLayerColor Background
 
 -- | Combined `onBackgroundColour` with `colour`.
-ctxColour :: Maybe (M.Map (PP.Color, Bool) (RGB Word16), M.Map RGB16 (PP.Color, Bool)) -> Maybe (RGB Word16) -> (PP.Color, Bool) -> PP.AnsiStyle
-ctxColour mps bkdClr clr = colour $ onBackgroundColour mps bkdClr clr
+ctxColour :: ColourContext -> (PP.Color, Bool) -> PP.AnsiStyle
+ctxColour (ColourContext mps bkdClr) clr = colour $ onBackgroundColour mps bkdClr clr
 
 onBackgroundColour :: Maybe (M.Map (PP.Color, Bool) (RGB Word16), M.Map RGB16 (PP.Color, Bool)) -> Maybe (RGB Word16) -> (PP.Color, Bool) -> (PP.Color, Bool)
 onBackgroundColour _ Nothing  c = c
@@ -114,6 +122,12 @@ ppColours =  [(clr,vvd) | clr <- ppCols, vvd <- [False, True]]
 
 ppCols :: [PP.Color]
 ppCols = [PP.Black, PP.Red, PP.Green, PP.Blue, PP.Yellow, PP.Magenta, PP.Cyan, PP.White]
+
+getColourContext :: IO ColourContext
+getColourContext = ColourContext <$> queryColours <*> getBkdColour
+  -- mps <- queryColours
+  -- bkd <- getBkdColour
+  -- return $ ColourContext mps bkd
 
 -- | Query the RGB Values of the 16
 --   Default Colours.

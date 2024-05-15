@@ -81,8 +81,9 @@ createMain = do
   runParserDefn <- 
     [d| mainRunner :: (DataFromCLI $(pure $ ConT inOrthType) $(pure $ ConT outOrthType)) -> IO ()
         mainRunner (DataFromCLI inFP outFP' inOrth outOrth fpExt ovrw) = do
-          clrMaps <- queryColours
-          bkdClr  <- getBkdColour
+          -- clrMaps <- queryColours
+          -- bkdClr  <- getBkdColour
+          clrCtx <- getColourContext
           putStrLn "Running orthography parser..."
           outFP <- case outFP' of
             (Just x) -> do

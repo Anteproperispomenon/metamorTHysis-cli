@@ -193,8 +193,12 @@ fixColour bkdClr fgdClr = case (bkdClr, fgdClr) of
   (BlueX , GreenL) -> YellowL
   (BlueX , GreenH) -> YellowH
   (WhiteX, WhiteX) -> BlackL
+  (RedX  , RedX  ) -> BlackL
+  (CyanL , GreenL) -> BlueL
   -- idk
-  (_, clr) -> clr
+  (bclr, clr)
+    | clr == bclr -> WhiteL -- default
+    | otherwise   -> clr
 
 colour :: (PP.Color, Bool) -> PP.AnsiStyle
 colour (clr, True ) = PP.color clr

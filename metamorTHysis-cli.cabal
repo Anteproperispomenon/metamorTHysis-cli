@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,6 +30,8 @@ library
       Metamorth.CLI.TH
       Metamorth.CLI.Types
   other-modules:
+      Paths_metamorTHysis_cli
+  autogen-modules:
       Paths_metamorTHysis_cli
   hs-source-dirs:
       src
@@ -62,6 +64,8 @@ test-suite metamorTHysis-cli-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Paths_metamorTHysis_cli
+  autogen-modules:
       Paths_metamorTHysis_cli
   hs-source-dirs:
       test
